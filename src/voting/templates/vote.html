@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Vote</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="site-header">
+        <a class="brand" href="/">
+          Polls
+          <span class="brand-tag">Create a question. Cast a vote. See the tally.</span>
+        </a>
+        <div class="header-actions">
+          <a class="btn btn-primary" href="/">All polls</a>
+          <a class="btn btn-primary" href="/create">Create poll</a>
+        </div>
+      </header>
+
+      <p class="poll-meta" id="page-error" hidden></p>
+
+      <article class="panel vote-panel" id="vote-panel" hidden>
+        <header class="vote-header">
+          <h1 class="vote-question" id="question"></h1>
+          <p class="poll-meta" id="vote-meta"></p>
+        </header>
+
+        <ul class="option-list" id="option-list"></ul>
+      </article>
+    </div>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const pollId = params.get("id");
+      const pageError = document.getElementById("page-error");
+      const panel = document.getElementById("vote-panel");
+      const optionList = document.getElementById("option-list");
+
+      function showError(message) {
+        pageError.hidden = false;
+        pageError.textContent = message;
+        panel.hidden = true;
+      }
+
+      function voteLabel(n) {
+        return n === 1 ? "1 vote" : n + " votes";
+      }
+
+      if (!pollId) {
+        showError("Missing poll id.");
+      } else {
+        (async function load() {
+          const response = await fetch("/polls/" + encodeURIComponent(pollId));
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            showError(
+              (data.error && data.error.message) || "Poll not found."
+            );
+            return;
+          }
+
+          document.title = "Vote — " + data.question;
+          document.getElementById("question").textContent = data.question;
+
+          const meta = document.getElementById("vote-meta");
+          meta.replaceChildren();
+          meta.append(
+            document.createTextNode(voteLabel(data.totalVotes) + " (")
+          );
+          const resultsBtn = document.createElement("button");
+          resultsBtn.className = "text-link";
+          resultsBtn.type = "button";
+          resultsBtn.textContent = "see results";
+          resultsBtn.addEventListener("click", () => {
+            window.location.href =
+              "/results?id=" + encodeURIComponent(pollId);
+          });
+          meta.append(resultsBtn);
+          meta.append(document.createTextNode(")"));
+
+          optionList.replaceChildren();
+          for (const opt of data.options) {
+            const li = document.createElement("li");
+            const btn = document.createElement("button");
+            btn.className = "option";
+            btn.type = "button";
+            btn.textContent = opt.text;
+            btn.addEventListener("click", async () => {
+              const voteResponse = await fetch(
+                "/polls/" +
+                  encodeURIComponent(pollId) +
+                  "/votes?option=" +
+                  encodeURIComponent(opt.number),
+                { method: "POST" }
+              );
+              if (!voteResponse.ok) {
+                const err = await voteResponse.json().catch(() => ({}));
+                showError(
+                  (err.error && err.error.message) || "Could not cast vote."
+                );
+                return;
+              }
+              window.location.href =
+                "/results?id=" + encodeURIComponent(pollId);
+            });
+            li.appendChild(btn);
+            optionList.appendChild(li);
+          }
+          panel.hidden = false;
+        })();
+      }
+    </script>
+  </body>
+</html>

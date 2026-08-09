@@ -1,0 +1,8 @@
+boto3
+flask
+moto[dynamodb]
+pytest
+pytest-playwright
+python-dotenv
+ruff
+setuptools

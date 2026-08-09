@@ -1,0 +1,79 @@
+name: Acceptance tests
+
+# Optional: run from the Actions tab (workflow_dispatch). Not required on every push.
+on:
+  workflow_dispatch:
+
+jobs:
+  ui:
+    runs-on: ubuntu-latest
+
+    # Most common way to run DynamoDB Local in GitHub Actions (no Compose file).
+    services:
+      dynamodb-local:
+        image: amazon/dynamodb-local:latest
+        ports:
+          - 8000:8000
+
+    env:
+      AWS_ACCESS_KEY_ID: local
+      AWS_SECRET_ACCESS_KEY: local
+      AWS_DEFAULT_REGION: us-east-1
+      POLLS_TABLE_NAME: Polls
+      DYNAMODB_ENDPOINT_URL: http://127.0.0.1:8000
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Python packages
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Install Playwright Chromium
+        run: playwright install chromium --with-deps
+
+      - name: Wait for DynamoDB Local
+        run: |
+          python - <<'PY'
+          import time
+          import boto3
+          from botocore.config import Config
+          client = boto3.client(
+              "dynamodb",
+              region_name="us-east-1",
+              endpoint_url="http://127.0.0.1:8000",
+              config=Config(connect_timeout=1, read_timeout=1, retries={"max_attempts": 1}),
+          )
+          for _ in range(30):
+              try:
+                  client.list_tables()
+                  break
+              except Exception:
+                  time.sleep(1)
+          else:
+              raise SystemExit("DynamoDB Local did not become ready")
+          PY
+
+      - name: Create Polls table
+        run: python scripts/create_table.py
+
+      - name: Start Flask app
+        run: |
+          python -m voting.app &
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:5000/health; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Flask app did not become ready" >&2
+          exit 1
+
+      - name: Run acceptance tests
+        run: pytest tests_ui

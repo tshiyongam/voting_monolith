@@ -1,0 +1,56 @@
+[
+  {
+    "pollId": "m3n8kp2w",
+    "createdAt": "2026-08-03T14:30:00.000Z",
+    "question": "Which day works best for the project meetup?",
+    "options": {
+      "1": { "text": "Monday", "votes": 0 },
+      "2": { "text": "Wednesday", "votes": 0 },
+      "3": { "text": "Thursday", "votes": 0 },
+      "4": { "text": "Friday", "votes": 0 }
+    }
+  },
+  {
+    "pollId": "k7m2xq9p",
+    "createdAt": "2026-07-28T12:15:00.000Z",
+    "question": "Favorite lunch spot on campus?",
+    "options": {
+      "1": { "text": "Commons", "votes": 10 },
+      "2": { "text": "HUB", "votes": 21 },
+      "3": { "text": "Off campus", "votes": 8 },
+      "4": { "text": "Skip lunch", "votes": 4 }
+    }
+  },
+  {
+    "pollId": "n4w8rt3c",
+    "createdAt": "2026-07-20T09:00:00.000Z",
+    "question": "Should the library extend weekend hours?",
+    "options": {
+      "1": { "text": "Yes", "votes": 17 },
+      "2": { "text": "No", "votes": 6 }
+    }
+  },
+  {
+    "pollId": "p9q4vs1b",
+    "createdAt": "2026-07-15T16:45:00.000Z",
+    "question": "Best place to study on campus?",
+    "options": {
+      "1": { "text": "Library quiet floor", "votes": 12 },
+      "2": { "text": "Library group rooms", "votes": 5 },
+      "3": { "text": "HUB", "votes": 3 },
+      "4": { "text": "CS lab", "votes": 9 },
+      "5": { "text": "Dorm lounge", "votes": 4 },
+      "6": { "text": "Somewhere else", "votes": 2 }
+    }
+  },
+  {
+    "pollId": "r2t7yh5d",
+    "createdAt": "2026-07-10T11:20:00.000Z",
+    "question": "Should the CS lounge get a second monitor?",
+    "options": {
+      "1": { "text": "Yes", "votes": 28 },
+      "2": { "text": "No", "votes": 3 },
+      "3": { "text": "No preference", "votes": 1 }
+    }
+  }
+]

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Create poll</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="site-header">
+        <a class="brand" href="/">
+          Polls
+          <span class="brand-tag">Create a question. Cast a vote. See the tally.</span>
+        </a>
+      </header>
+
+      <div class="create-form">
+        <div class="create-box">
+          <h1 class="vote-question">Create a poll</h1>
+          <p class="poll-meta" id="form-error" hidden></p>
+
+          <div class="field">
+            <label for="question">Question</label>
+            <input id="question" name="question" type="text" value="" autocomplete="off" />
+          </div>
+
+          <fieldset class="options-fieldset">
+            <legend>Options</legend>
+            <div id="options-fields"></div>
+          </fieldset>
+
+          <div class="create-add">
+            <button
+              class="btn btn-primary btn-icon"
+              type="button"
+              id="add-option"
+              aria-label="Add option"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        <div class="create-actions">
+          <a class="btn btn-primary" href="/">Cancel</a>
+          <button class="btn btn-primary" type="button" id="create-btn">Create</button>
+        </div>
+      </div>
+    </div>
+    <script>
+      const optionsFields = document.getElementById("options-fields");
+      const addOptionBtn = document.getElementById("add-option");
+      const createBtn = document.getElementById("create-btn");
+      const formError = document.getElementById("form-error");
+      let optionCount = 0;
+
+      function showError(message) {
+        formError.hidden = false;
+        formError.textContent = message;
+      }
+
+      function clearError() {
+        formError.hidden = true;
+        formError.textContent = "";
+      }
+
+      function refreshRemoveButtons() {
+        const rows = optionsFields.querySelectorAll(".field");
+        rows.forEach((row) => {
+          const btn = row.querySelector(".btn-icon");
+          if (!btn) return;
+          btn.hidden = rows.length <= 2;
+        });
+        addOptionBtn.hidden = rows.length >= 6;
+      }
+
+      function addOptionField(focus) {
+        if (optionCount >= 6) return;
+        optionCount += 1;
+        const n = optionCount;
+        const row = document.createElement("div");
+        row.className = "field field-with-action";
+        row.innerHTML =
+          '<label class="visually-hidden" for="option-' +
+          n +
+          '">Option ' +
+          n +
+          "</label>" +
+          '<input id="option-' +
+          n +
+          '" name="option" type="text" value="" autocomplete="off" />' +
+          '<button class="btn btn-primary btn-icon" type="button" aria-label="Remove option">−</button>';
+        row.querySelector("button").addEventListener("click", () => {
+          if (optionsFields.querySelectorAll(".field").length <= 2) return;
+          row.remove();
+          refreshRemoveButtons();
+        });
+        optionsFields.appendChild(row);
+        refreshRemoveButtons();
+        if (focus) row.querySelector("input").focus();
+      }
+
+      addOptionBtn.addEventListener("click", () => addOptionField(true));
+      addOptionField(false);
+      addOptionField(false);
+
+      createBtn.addEventListener("click", async () => {
+        clearError();
+        const question = document.getElementById("question").value.trim();
+        const options = Array.from(
+          optionsFields.querySelectorAll('input[name="option"]')
+        )
+          .map((input) => input.value.trim())
+          .filter((text) => text.length > 0);
+
+        if (!question) {
+          showError("Enter a question.");
+          return;
+        }
+        if (question.length > 280) {
+          showError("Question must be at most 280 characters.");
+          return;
+        }
+        if (options.length < 2 || options.length > 6) {
+          showError("Provide between 2 and 6 options.");
+          return;
+        }
+        if (options.some((text) => text.length > 100)) {
+          showError("Each option must be at most 100 characters.");
+          return;
+        }
+        if (new Set(options).size !== options.length) {
+          showError("Option labels must be distinct.");
+          return;
+        }
+
+        const response = await fetch("/polls", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question, options }),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          showError(
+            (data.error && data.error.message) || "Could not create the poll."
+          );
+          return;
+        }
+        window.location.href = "/vote?id=" + encodeURIComponent(data.id);
+      });
+    </script>
+  </body>
+</html>

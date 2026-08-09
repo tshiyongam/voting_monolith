@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Polls</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="site-header">
+        <div class="brand">
+          Polls
+          <span class="brand-tag">Create a question. Cast a vote. See the tally.</span>
+        </div>
+        <a class="btn btn-primary" href="/create">Create poll</a>
+      </header>
+
+      <ul class="poll-list panel" id="poll-list"></ul>
+      <p class="poll-meta" id="list-status" hidden></p>
+    </div>
+    <script>
+      const list = document.getElementById("poll-list");
+      const status = document.getElementById("list-status");
+
+      function voteLabel(n) {
+        return n === 1 ? "1 vote" : n + " votes";
+      }
+
+      async function loadPolls() {
+        status.hidden = true;
+        const response = await fetch("/polls");
+        if (!response.ok) {
+          status.hidden = false;
+          status.textContent = "Could not load polls.";
+          return;
+        }
+        const data = await response.json();
+        list.replaceChildren();
+        for (const poll of data.polls) {
+          const li = document.createElement("li");
+          li.className = "poll-row";
+          li.innerHTML =
+            '<div class="poll-main">' +
+            '<p class="poll-question"></p>' +
+            '<span class="poll-meta"></span>' +
+            "</div>" +
+            '<div class="poll-actions">' +
+            '<a class="btn btn-primary" href=""></a>' +
+            '<a class="btn btn-primary" href=""></a>' +
+            "</div>";
+          li.querySelector(".poll-question").textContent = poll.question;
+          li.querySelector(".poll-meta").textContent = voteLabel(poll.totalVotes);
+          const links = li.querySelectorAll("a");
+          links[0].textContent = "Vote";
+          links[0].href = "/vote?id=" + encodeURIComponent(poll.id);
+          links[1].textContent = "Results";
+          links[1].href = "/results?id=" + encodeURIComponent(poll.id);
+          list.appendChild(li);
+        }
+      }
+
+      loadPolls();
+    </script>
+  </body>
+</html>

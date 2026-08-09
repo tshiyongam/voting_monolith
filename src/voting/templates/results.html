@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Results</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="page">
+      <header class="site-header">
+        <a class="brand" href="/">
+          Polls
+          <span class="brand-tag">Create a question. Cast a vote. See the tally.</span>
+        </a>
+        <div class="header-actions">
+          <a class="btn btn-primary" href="/">All polls</a>
+          <a class="btn btn-primary" href="/create">Create poll</a>
+        </div>
+      </header>
+
+      <p class="poll-meta" id="page-error" hidden></p>
+
+      <article class="panel results-panel" id="results-panel" hidden>
+        <header class="results-header">
+          <h1 class="vote-question" id="question"></h1>
+          <p class="poll-meta" id="vote-count"></p>
+        </header>
+
+        <ul class="results-list" id="results-list"></ul>
+
+        <p class="results-footnote">
+          <button class="text-link" type="button" id="vote-again">
+            Vote or vote again
+          </button>
+        </p>
+      </article>
+    </div>
+    <script>
+      const params = new URLSearchParams(window.location.search);
+      const pollId = params.get("id");
+      const pageError = document.getElementById("page-error");
+      const panel = document.getElementById("results-panel");
+      const resultsList = document.getElementById("results-list");
+
+      function showError(message) {
+        pageError.hidden = false;
+        pageError.textContent = message;
+        panel.hidden = true;
+      }
+
+      function voteLabel(n) {
+        return n === 1 ? "1 vote" : n + " votes";
+      }
+
+      if (!pollId) {
+        showError("Missing poll id.");
+      } else {
+        document.getElementById("vote-again").addEventListener("click", () => {
+          window.location.href = "/vote?id=" + encodeURIComponent(pollId);
+        });
+
+        (async function load() {
+          const response = await fetch(
+            "/polls/" + encodeURIComponent(pollId) + "/results"
+          );
+          const data = await response.json().catch(() => ({}));
+          if (!response.ok) {
+            showError(
+              (data.error && data.error.message) || "Poll not found."
+            );
+            return;
+          }
+
+          document.title = "Results — " + data.question;
+          document.getElementById("question").textContent = data.question;
+          document.getElementById("vote-count").textContent = voteLabel(
+            data.totalVotes
+          );
+
+          const total = data.totalVotes || 0;
+          resultsList.replaceChildren();
+          for (const item of data.results) {
+            const pct =
+              total === 0 ? 0 : Math.round((item.votes / total) * 100);
+            const li = document.createElement("li");
+            li.innerHTML =
+              '<div class="result-top">' +
+              '<span class="result-label"></span>' +
+              '<span class="result-count"></span>' +
+              "</div>" +
+              '<div class="result-bar" aria-hidden="true">' +
+              '<span class="result-bar-fill" style="width: 0%"></span>' +
+              "</div>";
+            li.querySelector(".result-label").textContent = item.text;
+            li.querySelector(".result-count").textContent = String(item.votes);
+            li.querySelector(".result-bar-fill").style.width = pct + "%";
+            resultsList.appendChild(li);
+          }
+          panel.hidden = false;
+        })();
+      }
+    </script>
+  </body>
+</html>
