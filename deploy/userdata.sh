@@ -26,7 +26,8 @@ yum install -y java-17-amazon-corretto-headless python3.12 git unzip
 git clone "$REPO_URL" "$APP_DIR"
 cd "$APP_DIR"
 
-python3 -m venv .venv
+# Use python3.12 instead of python3 to ensure we use the correct version of Python
+python3.12 -m venv .venv
 .venv/bin/pip install --upgrade pip
 .venv/bin/pip install -r requirements.txt
 .venv/bin/pip install -e .
