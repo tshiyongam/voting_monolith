@@ -134,7 +134,7 @@ The browser UI is vanilla HTML, CSS, and JavaScript. It calls the HTTP API with 
 
 ## Sample data and seeding
 
-Poll fixtures live in `data/sample-data.json` (kept in sync by hand with the specs repository fixture). See [development.md](development.md) and [dynamodb-local.md](dynamodb-local.md). `scripts/create_table.py` creates the `Polls` table; optional `scripts/seed.py` loads the sample file (and fails if the table is missing).
+Poll fixtures live in `data/sample-data.json` (kept in sync by hand with the specs repository fixture). See [development.md](development.md) and [dynamodb-local.md](dynamodb-local.md). `scripts/create_table.py` creates the `Polls` table (fails if it already exists); `scripts/delete_table.py` removes it (prompts unless `-y`); optional `scripts/seed.py` loads the sample file (and fails if the table is missing).
 
 For local manual testing: start DynamoDB Local, create the table, optionally seed, run `python -m voting.app`, use the browser.
 
@@ -160,7 +160,11 @@ An optional **Acceptance tests** workflow (`workflow_dispatch`) starts DynamoDB 
 
 ## Config
 
-`ensure_settings()` in `voting.settings` loads `.env` (if present) and requires the DynamoDB-related environment variables. `launch()` builds `PollStorage`, pings the table, and creates the Flask app. Scripts and acceptance fixtures call `ensure_settings` the same way.
+`ensure_settings()` in `voting.settings` loads `.env` (if present) and requires the DynamoDB-related environment variables. `launch()` builds `PollStorage`, pings the table, and creates the Flask app. Scripts and acceptance fixtures call `ensure_settings` the same way. On EC2, gunicorn loads the app with `--factory voting.app:launch`.
+
+## Deploy on EC2
+
+See [deploy-ec2.md](deploy-ec2.md). One root script (`deploy/userdata.sh`) deploys to `/home/ec2-user/voting_monolith`: clone, venv, `.env`, DynamoDB Local on disk, systemd units, create `Polls` table, gunicorn on port 80 (two workers by default). Long-running units run as `ec2-user`; `voting.service` waits for DynamoDB before starting.
 
 ## Package layout
 
@@ -170,17 +174,24 @@ An optional **Acceptance tests** workflow (`workflow_dispatch`) starts DynamoDB 
   docs/
     development.md   # local Python / test / run workflow
     dynamodb-local.md
+    deploy-ec2.md    # EC2 manual install + user data
     design.md        # this file
   config/
     example.env      # copy to .env at project root
   data/
     sample-data.json # copy of specs fixture; seed + tests (keep in sync by hand)
   db/                # DynamoDB Local JAR + data (gitignored)
+  deploy/
+    dynamodb-local.service
+    voting.service
+    userdata.sh      # root EC2 bootstrap (set REPO_URL; clone → app → units → table)
   .env               # local settings (gitignored; create from example.env)
   setup.py
   scripts/
-    create_table.py  # create Polls table
-    seed.py          # load data/sample-data.json (table must exist)
+    create_table.py       # create Polls table (fails if it exists)
+    delete_table.py       # delete Polls table (prompt, or -y)
+    wait_for_dynamodb.py  # poll ListTables until ready (CI + systemd)
+    seed.py               # load data/sample-data.json (table must exist)
   src/voting/
     settings.py      # ensure_settings() — load .env, require keys
     poll_types.py    # PollData / views + item + extract helpers

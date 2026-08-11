@@ -10,6 +10,7 @@ This is the monolithic implementation of the Voting application. See the **specs
 |-----|----------|
 | [Development setup](docs/development.md) | Virtualenv, install, unit tests, lint, `.env`, DynamoDB Local, run the app, acceptance tests |
 | [DynamoDB Local](docs/dynamodb-local.md) | Download, install into `db/`, start command, flags, port |
+| [Deploy on EC2](docs/deploy-ec2.md) | Security group, manual install, user data, systemd units |
 | [Design](docs/design.md) | Layers, data types, UI notes, package layout |
 
 ## Quick start

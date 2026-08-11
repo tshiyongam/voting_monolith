@@ -39,6 +39,12 @@ With your virtual environment active and DynamoDB Local running:
 python scripts/create_table.py
 ```
 
+`create_table.py` fails if the table already exists. To delete it (prompts unless you pass `-y`):
+
+```bash
+python scripts/delete_table.py
+```
+
 To load the sample polls from `data/sample-data.json` (optional; the table must already exist):
 
 ```bash

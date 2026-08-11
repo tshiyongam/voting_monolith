@@ -39,26 +39,7 @@ jobs:
         run: playwright install chromium --with-deps
 
       - name: Wait for DynamoDB Local
-        run: |
-          python - <<'PY'
-          import time
-          import boto3
-          from botocore.config import Config
-          client = boto3.client(
-              "dynamodb",
-              region_name="us-east-1",
-              endpoint_url="http://127.0.0.1:8000",
-              config=Config(connect_timeout=1, read_timeout=1, retries={"max_attempts": 1}),
-          )
-          for _ in range(30):
-              try:
-                  client.list_tables()
-                  break
-              except Exception:
-                  time.sleep(1)
-          else:
-              raise SystemExit("DynamoDB Local did not become ready")
-          PY
+        run: python scripts/wait_for_dynamodb.py
 
       - name: Create Polls table
         run: python scripts/create_table.py

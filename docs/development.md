@@ -69,7 +69,16 @@ With the venv active, DynamoDB Local up, and `.env` in place:
 python scripts/create_table.py
 ```
 
-If DynamoDB Local was started with `-inMemory` and you restart it, run this again (the table does not survive the process).
+This fails if the table already exists. To wipe and recreate:
+
+```bash
+python scripts/delete_table.py
+python scripts/create_table.py
+```
+
+(`delete_table.py` prompts for confirmation; pass `-y` to skip the prompt.)
+
+If DynamoDB Local was started with `-inMemory` and you restart it, the table is gone — run `create_table.py` again.
 
 ## 8. Seed sample data (optional)
 

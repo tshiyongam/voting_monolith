@@ -1,5 +1,6 @@
 boto3
 flask
+gunicorn
 moto[dynamodb]
 pytest
 pytest-playwright
