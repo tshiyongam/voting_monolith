@@ -6,6 +6,8 @@ For DynamoDB Local install/start details, see [dynamodb-local.md](dynamodb-local
 
 ## 1. Create a virtual environment
 
+Use **Python 3.12 or newer**
+
 From the root of the project:
 
 ```bash

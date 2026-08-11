@@ -160,7 +160,7 @@ An optional **Acceptance tests** workflow (`workflow_dispatch`) starts DynamoDB 
 
 ## Config
 
-`ensure_settings()` in `voting.settings` loads `.env` (if present) and requires the DynamoDB-related environment variables. `launch()` builds `PollStorage`, pings the table, and creates the Flask app. Scripts and acceptance fixtures call `ensure_settings` the same way. On EC2, gunicorn loads the app with `--factory voting.app:launch`.
+`ensure_settings()` in `voting.settings` loads `.env` (if present) and requires the DynamoDB-related environment variables. `launch()` builds `PollStorage`, pings the table, and creates the Flask app. Scripts and acceptance fixtures call `ensure_settings` the same way. On EC2, gunicorn loads the app with `'voting.app:launch()'`.
 
 ## Deploy on EC2
 

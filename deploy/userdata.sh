@@ -21,7 +21,7 @@ REPO_URL="https://github.com/YOUR_GITHUB_USERNAME/voting_monolith.git"
 APP_DIR=/home/ec2-user/voting_monolith
 DYNAMODB_ZIP_URL="https://s3.us-west-2.amazonaws.com/dynamodb-local/v2.x/dynamodb_local_latest.zip"
 
-yum install -y java-17-amazon-corretto-headless python3 python3-pip git unzip
+yum install -y java-17-amazon-corretto-headless python3.12 git unzip
 
 git clone "$REPO_URL" "$APP_DIR"
 cd "$APP_DIR"
