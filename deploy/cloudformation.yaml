@@ -1,0 +1,141 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Voting monolith on a single EC2 instance in a small public VPC created by this
+  stack. User data downloads deploy/userdata.sh from your GitHub fork and runs it
+  (edit REPO_URL there and push before creating the stack).
+
+Parameters:
+  GitHubUsername:
+    Type: String
+    Description: >-
+      Your GitHub username. The stack downloads
+      https://raw.githubusercontent.com/<username>/voting_monolith/main/deploy/userdata.sh
+      Push your REPO_URL edit to main before you create the stack.
+    AllowedPattern: "^[A-Za-z0-9](?:[A-Za-z0-9]|-(?=[A-Za-z0-9])){0,38}$"
+    ConstraintDescription: A GitHub username (letters, numbers, hyphens).
+
+Resources:
+  VotingVpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.42.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: voting-monolith-vpc
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: voting-monolith-igw
+
+  VpcGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VotingVpc
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VotingVpc
+      CidrBlock: 10.42.0.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: voting-monolith-public
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VotingVpc
+      Tags:
+        - Key: Name
+          Value: voting-monolith-public-rt
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VpcGatewayAttachment
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  WebSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Voting monolith - SSH, HTTP, and HTTPS
+      VpcId: !Ref VotingVpc
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+          Description: SSH
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS
+      Tags:
+        - Key: Name
+          Value: voting-monolith-web
+
+  VotingInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      # Current Amazon Linux 2023 AMI in this region (x86_64).
+      ImageId: "{{resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64}}"
+      InstanceType: t3.micro
+      KeyName: vockey
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          GroupSet:
+            - !Ref WebSecurityGroup
+          SubnetId: !Ref PublicSubnet
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -euo pipefail
+          curl -fsSL "https://raw.githubusercontent.com/${GitHubUsername}/voting_monolith/main/deploy/userdata.sh" \
+            -o /tmp/voting-userdata.sh
+          bash /tmp/voting-userdata.sh
+      Tags:
+        - Key: Name
+          Value: voting-monolith
+
+Outputs:
+  InstanceId:
+    Description: EC2 instance id
+    Value: !Ref VotingInstance
+
+  PublicIP:
+    Description: Public IPv4 address (associate your Elastic IP with this instance if you use one)
+    Value: !GetAtt VotingInstance.PublicIp
+
+  SecurityGroupId:
+    Description: Security group id
+    Value: !Ref WebSecurityGroup
+
+  VpcId:
+    Description: VPC created for this stack
+    Value: !Ref VotingVpc
+
+  HealthCheckURL:
+    Description: Health URL using the instance public IP (userdata may still be running after CREATE_COMPLETE)
+    Value: !Sub "http://${VotingInstance.PublicIp}/health"

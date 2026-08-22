@@ -184,7 +184,9 @@ See [deploy-ec2.md](deploy-ec2.md). One root script (`deploy/userdata.sh`) deplo
   deploy/
     dynamodb-local.service
     voting.service
-    userdata.sh      # root EC2 bootstrap (set REPO_URL; clone → app → units → table)
+    userdata.sh           # root EC2 bootstrap (set REPO_URL; push before CFN)
+    cloudformation.yaml   # EC2 + SG; UserData stub curls userdata.sh from your fork
+
   .env               # local settings (gitignored; create from example.env)
   setup.py
   scripts/
