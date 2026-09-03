@@ -1,76 +1,48 @@
 # Deploy with CloudFormation (CLI)
 
-This document explains how to launch the voting app with **AWS CloudFormation** and the **AWS CLI**. The template creates a small **public VPC**, a `t3.micro` Amazon Linux instance, a security group (ports **22**, **80**, and **443** from anywhere), and a short user-data stub that downloads `deploy/userdata.sh` from **your** GitHub fork and runs it.
+This document explains how to launch the voting app with **AWS CloudFormation** and the **AWS CLI**.
 
-The key pair name is **`vockey`** (the usual AWS Academy key). You only pass your **GitHub username** as a parameter.
 
-Template file: `deploy/cloudformation.yaml`.
+## Prerequisites
 
-## Set up the AWS CLI
+You need the **AWS CLI** installed and configured with current AWS Academy Learner Lab credentials in the `[default]` profile.
 
-This section assumes the AWS CLI is already installed on your **Mac**. You still need credentials from **AWS Academy Learner Lab** for each lab session.
 
-### 1. Start the lab and copy CLI credentials
+## One-Time Setup
 
-1. Start your **Learner Lab** and wait until it is ready (green indicator).
-2. Open **AWS Details**.
-3. Next to **AWS CLI**, choose **Show**.
-4. Copy the credential block Academy displays. It includes a temporary access key, secret access key, and session token for the `[default]` profile.
+The file file `deploy/userdata.sh` is used in the deployment process, and you must change one line before you deploy
 
-Those credentials expire when the lab session ends (on the order of a few hours). Copy a fresh block at the start of each session.
+* Open `deploy/userdata.sh` in Cursor or `nano`.
+* Near the top of the file you will find the line:
 
-### 2. Write `~/.aws/credentials`
+  ```
+  REPO_URL="https://github.com/YOUR_GITHUB_USERNAME/voting_monolith.git"
+  ```
+* Change `YOUR_GITHUB_USERNAME` to your Github username.
+* Commit this change to the git repo, and push it back to your Github account
 
-```bash
-mkdir -p ~/.aws
-```
+  ```
+  git add deploy/userdata.sh
+  git commit -m "set github account"
+  git push origin main
+  ```
+  
+If the `git push` command fails, check the url of `origin` and make sure it points at your fork of the repo
 
-Put Academy’s block into `~/.aws/credentials`. It should look like this (use the **values from the lab**, not these placeholders):
+  ```
+  git remote -v
+  ```
+  
 
-```ini
-[default]
-aws_access_key_id=ASIA...
-aws_secret_access_key=...
-aws_session_token=...
-```
-
-You can replace the whole file with what Academy shows, or paste under `[default]` if you keep other named profiles for other work.
-
-### 3. Write `~/.aws/config`
-
-Create `~/.aws/config` with your lab region. AWS Academy Learner Lab is normally **`us-east-1`**:
-
-```ini
-[default]
-region=us-east-1
-output=json
-```
-
-`output=json` is optional; it makes CLI output easier to read in scripts.
-
-### 4. Check that the CLI works
-
-```bash
-aws sts get-caller-identity
-```
-
-You should see an account id and an ARN for the lab role (not an error about missing credentials). If authentication fails, start the lab again, copy a new credential block, and update `~/.aws/credentials`.
-
-## Before you create the stack
-
-1. In your fork, set **`REPO_URL`** in `deploy/userdata.sh` to your clone URL (keep the repository name **`voting_monolith`**).
-2. **Commit and push** that change to **`main`**. The instance downloads the script from GitHub at boot; an unpushed edit will not be used.
-3. Configure the AWS CLI with current Learner Lab credentials (see [Set up the AWS CLI](#set-up-the-aws-cli)).
-4. Confirm the template is valid (optional but useful):
-
-```bash
-aws cloudformation validate-template \
-  --template-body file://deploy/cloudformation.yaml
-```
-
-Run that command from the **root of your clone** (so the `file://` path is correct).
 
 ## Create the stack
+
+CloudFormation defines a *stack* of AWS resources. For this application we need:
+
+* A security group that allows SSH, HTTP, and HTTPS
+* The EC2 instance
+
+The file `deploy/cloudformation.yaml` specifies those resources. 
 
 From the root of your clone:
 
@@ -92,7 +64,7 @@ aws cloudformation wait stack-create-complete \
 
 ## After the stack is complete
 
-Read the outputs (public IP and health URL):
+Read the public IP from the stack output:
 
 ```bash
 aws cloudformation describe-stacks \
@@ -120,4 +92,4 @@ aws cloudformation delete-stack --stack-name voting-monolith
 aws cloudformation wait stack-delete-complete --stack-name voting-monolith
 ```
 
-Deleting the stack removes the instance, security group, and the VPC (and related networking) created by the template. It does **not** release an Elastic IP you associated by hand.
+Deleting the stack removes the instance and the security group. It does **not** release an Elastic IP you associated by hand.
