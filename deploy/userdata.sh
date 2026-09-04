@@ -16,7 +16,7 @@ set -euo pipefail
 # USERNAME. DO NOT CHANGE THE REPOSITORY NAME (voting_monolith).
 ##############################################################################
 ##############################################################################
-REPO_URL="https://github.com/YOUR_GITHUB_USERNAME/voting_monolith.git"
+REPO_URL="https://github.com/tshiyongam/voting_monolith.git"
 
 APP_DIR=/home/ec2-user/voting_monolith
 DYNAMODB_ZIP_URL="https://s3.us-west-2.amazonaws.com/dynamodb-local/v2.x/dynamodb_local_latest.zip"
